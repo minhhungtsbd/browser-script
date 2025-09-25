@@ -352,7 +352,6 @@ goto :MainMenu
 :CheckUpdate
 echo Checking for updates...
 echo.
-timeout /t 3 >nul
 
 :: Clean up old helper files if any remain.
 set "HelperFile=%~dp0UpdateHelper.bat"
@@ -365,10 +364,7 @@ if exist "%HelperFile%" (
     ) else (
         echo Delete SUCCESS.
     )
-) else (
-    echo UpdateHelper.bat not found.
 )
-timeout /t 3 >nul
 
 :: Local commit
 echo Local commit : %commit_id_local%
