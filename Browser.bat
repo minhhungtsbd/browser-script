@@ -401,3 +401,5 @@ if exist "%UpdateFile%" (
     timeout /t 10 >nul
     goto :MainMenu
 )
+
+:: Updated for CRLF test
