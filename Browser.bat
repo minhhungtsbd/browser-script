@@ -353,7 +353,7 @@ goto :MainMenu
 echo Checking for updates...
 echo.
 
-:: Local commit (declared at the beginning of the file)
+:: Local commit
 echo Local commit : %commit_id_local%
 
 :: Get remote commit ID from GitHub
@@ -380,11 +380,10 @@ if "%commit_id_local%"=="%commit_id_remote%" (
 echo New commit detected. Downloading update...
 echo.
 
-:: Set the download path in the current script directory
 set "ScriptFolder=%~dp0"
 set "UpdateFile=%ScriptFolder%Browser_new.bat"
 
-:: Download file using PowerShell
+:: Download file
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try {[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%')} catch {[Environment]::Exit(1)}"
 if errorlevel 1 (
     echo ERROR: Download failed.
@@ -398,10 +397,12 @@ if exist "%UpdateFile%" (
     move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
     echo Updated Browser.bat
 
-    :: Update commit_id_local in file to commit_id_remote
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "try {(Get-Content '%ScriptFolder%Browser.bat') -replace 'set commit_id_local=.*','set commit_id_local=%commit_id_remote%' | Set-Content -Encoding ASCII '%ScriptFolder%Browser.bat'} catch {[Environment]::Exit(2)}"
+    :: Try update commit_id_local
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $commit='%commit_id_remote%'; (Get-Content '%ScriptFolder%Browser.bat') -replace 'set commit_id_local=.*','set commit_id_local='+$commit | Set-Content -Encoding ASCII '%ScriptFolder%Browser.bat' } catch { exit 2 }"
     if errorlevel 2 (
-        echo ERROR: Failed to update commit_id_local.
+        echo ERROR: Failed to update commit_id_local, rolling back...
+        del "%ScriptFolder%Browser.bat" >nul 2>&1
+        move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
         timeout /t 5 >nul
         goto :MainMenu
     )
