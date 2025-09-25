@@ -358,7 +358,7 @@ echo Local commit : %commit_id_local%
 
 :: Get remote commit ID from GitHub
 set "commit_id_remote="
-for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (Invoke-RestMethod -Uri 'https://api.github.com/repos/minhhungtsbd/browser-script/commits/main').sha"`) do (
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try {(Invoke-RestMethod -Uri 'https://api.github.com/repos/minhhungtsbd/browser-script/commits/main').sha} catch {''}"`) do (
     set "commit_id_remote=%%i"
 )
 
@@ -372,7 +372,7 @@ if "%commit_id_remote%"=="" (
 )
 
 if "%commit_id_local%"=="%commit_id_remote%" (
-    echo The script is in the latest version.
+    echo The script is already at the latest version.
     timeout /t 3 >nul
     goto :MainMenu
 )
@@ -384,26 +384,34 @@ echo.
 set "ScriptFolder=%~dp0"
 set "UpdateFile=%ScriptFolder%Browser_new.bat"
 
-:: Download files using PowerShell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%')"
-timeout /t 3 >nul
+:: Download file using PowerShell
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try {[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%')} catch {[Environment]::Exit(1)}"
+if errorlevel 1 (
+    echo ERROR: Download failed.
+    timeout /t 5 >nul
+    goto :MainMenu
+)
 
 :: Check downloaded file
 if exist "%UpdateFile%" (
-    echo Download thành công: %UpdateFile%
+    echo Download successful: %UpdateFile%
     move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
-    echo Đã cập nhật file Browser.bat
+    echo Updated Browser.bat
 
     :: Update commit_id_local in file to commit_id_remote
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%ScriptFolder%Browser.bat') -replace 'set commit_id_local=.*','set commit_id_local=%commit_id_remote%' | Set-Content -Encoding ASCII '%ScriptFolder%Browser.bat'"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "try {(Get-Content '%ScriptFolder%Browser.bat') -replace 'set commit_id_local=.*','set commit_id_local=%commit_id_remote%' | Set-Content -Encoding ASCII '%ScriptFolder%Browser.bat'} catch {[Environment]::Exit(2)}"
+    if errorlevel 2 (
+        echo ERROR: Failed to update commit_id_local.
+        timeout /t 5 >nul
+        goto :MainMenu
+    )
 
-    echo Đã thay commit_id_local = %commit_id_remote%
+    echo Updated commit_id_local = %commit_id_remote%
     timeout /t 3 >nul
     start Browser.bat
     exit
 ) else (
-    echo ERROR: File không tồn tại sau khi download.
-    echo Hãy kiểm tra giá trị biến UpdateFile.
+    echo ERROR: File not found after download.
     timeout /t 10 >nul
     goto :MainMenu
 )
