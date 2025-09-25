@@ -12,7 +12,7 @@ title  Cloudmini tool
 
 set winbuild=1
 set psc=powershell.exe
-set commit_id_local=5b99aa1b58e027c66ed5eef5e55593a66e2c80bd
+set commit_id_local=2ca6eddfc88f84e3b08e7f57630a06a7834b19bc
 for /f "tokens=4-5 delims=. " %%i in ('ver') do set winver=%%i.%%j
 
 :: --- Call to check for updates before entering the menu. ---
