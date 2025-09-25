@@ -12,10 +12,10 @@ title  Cloudmini tool
 
 set winbuild=1
 set psc=powershell.exe
-set commit_id_local=ce2dd155a414ae2ad136cb36dcef3bd4b252fb16
+set commit_id_local=5b99aa1b58e027c66ed5eef5e55593a66e2c80bd
 for /f "tokens=4-5 delims=. " %%i in ('ver') do set winver=%%i.%%j
 
-:: --- Gọi check update trước khi vào menu ---
+:: --- Call to check for updates before entering the menu. ---
 goto :CheckUpdate
 
 ::========================================================================================================================================
@@ -106,10 +106,9 @@ if "%downloadurl%"=="" (
     set "downloadurl=https://archive.org/download/browser_02.05.2022/19092025/MicrosoftEdgeSetup.exe"
 )
 
-rem --- PowerShell tải file với fallback (1 dòng, không icon) ---
 %psc% -NoProfile -ExecutionPolicy Bypass -Command "try {Import-Module BitsTransfer -ErrorAction Stop; Start-BitsTransfer '%downloadurl%' '%downloadpath%' -ErrorAction Stop} catch {Write-Host 'Primary URL failed, trying fallback...'; try {Start-BitsTransfer 'https://files.cloudmini.net/MicrosoftEdgeSetup.exe' 'C:\Users\Administrator\Desktop\MicrosoftEdgeSetup.exe' -ErrorAction Stop} catch {[System.Environment]::Exit(1)}}"
 
-rem --- Nếu tải lỗi cả 2 URL ---
+rem --- If both URLs fail to load ---
 if errorlevel 1 (
     echo.
     echo ERROR: Edge download failed from all URLs.
@@ -118,17 +117,17 @@ if errorlevel 1 (
     goto :MainMenu
 )
 
-rem --- Cài đặt Edge ---
+rem --- Install Edge ---
 if exist "%downloadpath%" (
     echo Download complete. Starting installation, please wait...
     "%downloadpath%" /silent /install
     echo Microsoft Edge installation started.
 
-    rem --- Xoá file cài đặt sau khi cài ---
+    rem --- Delete the installation file after installation ---
     del /f /q "%downloadpath%"
     echo Installer deleted.
 
-	rem --- Tạo shortcut Edge trên Desktop ---
+	rem --- Create Edge shortcut on Desktop ---
 	if "%winver%"=="6.3" (
 		%psc% -NoProfile -ExecutionPolicy Bypass -Command " $WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Microsoft Edge.lnk'); $Shortcut.TargetPath = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'; $Shortcut.IconLocation = 'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe,0'; $Shortcut.Save() "
 	)
@@ -163,10 +162,10 @@ if "%downloadurl%"=="" (
     set "downloadurl=https://dl.google.com/dl/chrome/install/googlechromestandaloneenterprise64.msi"
 )
 
-rem --- PowerShell tải file với fallback (gói 1 dòng) ---
+rem --- PowerShell download file with fallback ---
 %psc% -NoProfile -ExecutionPolicy Bypass -Command "try {Import-Module BitsTransfer -ErrorAction Stop; Start-BitsTransfer '%downloadurl%' '%downloadpath%' -ErrorAction Stop} catch {try {Start-BitsTransfer 'https://files.cloudmini.net/ChromeSetup.exe' 'C:\Users\Administrator\Desktop\ChromeSetup.exe' -ErrorAction Stop} catch {[System.Environment]::Exit(1)}}"
 
-rem --- Nếu lỗi tải xuống ---
+rem --- If there is a download error---
 if errorlevel 1 (
     echo.
     echo ERROR: Download failed from all URLs.
@@ -175,7 +174,7 @@ if errorlevel 1 (
     goto :MainMenu
 )
 
-rem --- Cài đặt ---
+rem --- Starting installation ---
 if exist "%downloadpath%" (
     echo Download complete. Starting installation, please wait...
     if /i "%downloadpath:~-4%"==".exe" (
@@ -186,7 +185,7 @@ if exist "%downloadpath%" (
     echo.
     echo Chrome installation finished.
 
-    rem --- Xoá file cài đặt sau khi cài ---
+    rem --- Delete the installation file after installation. ---
     del /f /q "%downloadpath%"
     echo Installer deleted.
 ) else (
@@ -216,10 +215,10 @@ if "%downloadurl%"=="" (
     set "downloadurl=https://referrals.brave.com/latest/BraveBrowserSetup.exe"
 )
 
-rem --- PowerShell tải file với fallback ---
+rem --- PowerShell download file with fallback ---
 %psc% -NoProfile -ExecutionPolicy Bypass -Command "try {Import-Module BitsTransfer -ErrorAction Stop; Start-BitsTransfer '%downloadurl%' '%downloadpath%' -ErrorAction Stop} catch {Write-Host 'Primary URL failed, trying fallback...'; try {Start-BitsTransfer 'https://files.cloudmini.net/BraveBrowserSetup.exe' 'C:\Users\Administrator\Desktop\BraveBrowserSetup.exe' -ErrorAction Stop} catch {[System.Environment]::Exit(1)}}"
 
-rem --- Nếu tải lỗi cả 2 URL ---
+rem --- If both URLs fail to load ---
 if errorlevel 1 (
     echo.
     echo ERROR: Brave download failed from all URLs.
@@ -228,13 +227,13 @@ if errorlevel 1 (
     goto :MainMenu
 )
 
-rem --- Cài đặt Brave ---
+rem --- Install Brave ---
 if exist "%downloadpath%" (
     echo Download complete. Starting installation, please wait...
     "%downloadpath%" /silent /install
     echo Brave installation started.
 
-    rem --- Xoá file cài đặt sau khi cài ---
+    rem --- Delete the installation file after installation. ---
     del /f /q "%downloadpath%"
     echo Installer deleted.
 ) else (
@@ -265,10 +264,10 @@ if "%downloadurl%"=="" (
     set "downloadurl=https://download.mozilla.org/?product=firefox-latest&os=win64&lang=en-US"
 )
 
-rem --- PowerShell tải file với fallback ---
+rem --- PowerShell download file with fallback ---
 %psc% -NoProfile -ExecutionPolicy Bypass -Command "try {Import-Module BitsTransfer -ErrorAction Stop; Start-BitsTransfer '%downloadurl%' '%downloadpath%' -ErrorAction Stop} catch {Write-Host 'Primary URL failed, trying fallback...'; try {Start-BitsTransfer 'https://files.cloudmini.net/FirefoxSetup.exe' 'C:\Users\Administrator\Desktop\FirefoxSetup.exe' -ErrorAction Stop} catch {[System.Environment]::Exit(1)}}"
 
-rem --- Nếu tải lỗi cả 2 URL ---
+rem --- If both URLs fail to load ---
 if errorlevel 1 (
     echo.
     echo ERROR: Firefox download failed from all URLs.
@@ -277,7 +276,7 @@ if errorlevel 1 (
     goto :MainMenu
 )
 
-rem --- Cài đặt Firefox ---
+rem --- Install Firefox ---
 if exist "%downloadpath%" (
     echo Download complete. Starting installation, please wait...
     if /i "%downloadpath:~-4%"==".exe" (
@@ -287,7 +286,7 @@ if exist "%downloadpath%" (
     )
     echo Firefox installation finished.
 
-    rem --- Xoá file cài đặt sau khi cài ---
+    rem --- Delete the installation file after installation. ---
     del /f /q "%downloadpath%"
     echo Installer deleted.
 ) else (
@@ -318,10 +317,10 @@ if "%downloadurl%"=="" (
     set "downloadurl=https://static.centbrowser.com/win_stable/5.2.1168.83/centbrowser_5.2.1168.83_x64.exe"
 )
 
-rem --- PowerShell tải file với fallback ---
+rem --- PowerShell download file with fallback ---
 %psc% -NoProfile -ExecutionPolicy Bypass -Command "try {Import-Module BitsTransfer -ErrorAction Stop; Start-BitsTransfer '%downloadurl%' '%downloadpath%' -ErrorAction Stop} catch {Write-Host 'Primary URL failed, trying fallback...'; try {Start-BitsTransfer 'https://files.cloudmini.net/CentbrowserSetup.exe' 'C:\Users\Administrator\Desktop\CentbrowserSetup.exe' -ErrorAction Stop} catch {[System.Environment]::Exit(1)}}"
 
-rem --- Nếu tải lỗi cả 2 URL ---
+rem --- If both URLs fail to load ---
 if errorlevel 1 (
     echo.
     echo ERROR: CentBrowser download failed from all URLs.
@@ -330,7 +329,7 @@ if errorlevel 1 (
     goto :MainMenu
 )
 
-rem --- Cài đặt CentBrowser ---
+rem --- Install CentBrowser ---
 if exist "%downloadpath%" (
     echo Download complete. Unblocking installer...
     %psc% -NoProfile -ExecutionPolicy Bypass -Command "Unblock-File -Path '%downloadpath%'"
@@ -339,7 +338,7 @@ if exist "%downloadpath%" (
     "%downloadpath%" --cb-auto-update --do-not-launch-chrome --system-level
     echo CentBrowser installation finished.
 
-    rem --- Xoá file cài đặt sau khi cài ---
+    rem --- Delete the installation file after installation. ---
     del /f /q "%downloadpath%"
     echo Installer deleted.
 ) else (
@@ -354,10 +353,10 @@ goto :MainMenu
 echo Checking for updates...
 echo.
 
-:: Local commit (khai báo ở đầu file)
+:: Local commit (declared at the beginning of the file)
 echo Local commit : %commit_id_local%
 
-:: Lấy commit ID remote từ GitHub
+:: Get remote commit ID from GitHub
 set "commit_id_remote="
 for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (Invoke-RestMethod -Uri 'https://api.github.com/repos/minhhungtsbd/browser-script/commits/main').sha"`) do (
     set "commit_id_remote=%%i"
@@ -367,13 +366,13 @@ echo Remote commit: %commit_id_remote%
 echo.
 
 if "%commit_id_remote%"=="" (
-    echo ERROR: Không lấy được commit ID từ GitHub.
+    echo ERROR: Unable to get commit ID from GitHub.
     timeout /t 5 >nul
     goto :MainMenu
 )
 
 if "%commit_id_local%"=="%commit_id_remote%" (
-    echo Script đã ở phiên bản mới nhất.
+    echo The script is in the latest version.
     timeout /t 3 >nul
     goto :MainMenu
 )
@@ -381,19 +380,26 @@ if "%commit_id_local%"=="%commit_id_remote%" (
 echo New commit detected. Downloading update...
 echo.
 
-:: Đặt đường dẫn tải về trong thư mục script hiện tại
+:: Set the download path in the current script directory
 set "ScriptFolder=%~dp0"
 set "UpdateFile=%ScriptFolder%Browser_new.bat"
 
-:: Thực hiện tải file bằng PowerShell (1 dòng duy nhất)
+:: Download files using PowerShell
 powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%')"
+timeout /t 3 >nul
 
-:: Kiểm tra file tải về
+:: Check downloaded file
 if exist "%UpdateFile%" (
     echo Download thành công: %UpdateFile%
     move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
     echo Đã cập nhật file Browser.bat
+
+    :: Update commit_id_local in file to commit_id_remote
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "(Get-Content '%ScriptFolder%Browser.bat') -replace 'set commit_id_local=.*','set commit_id_local=%commit_id_remote%' | Set-Content -Encoding ASCII '%ScriptFolder%Browser.bat'"
+
+    echo Đã thay commit_id_local = %commit_id_remote%
     timeout /t 3 >nul
+    start Browser.bat
     exit
 ) else (
     echo ERROR: File không tồn tại sau khi download.
@@ -401,5 +407,3 @@ if exist "%UpdateFile%" (
     timeout /t 10 >nul
     goto :MainMenu
 )
-
-:: Updated for CRLF test .
