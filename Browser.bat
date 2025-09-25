@@ -353,6 +353,9 @@ goto :MainMenu
 echo Checking for updates...
 echo.
 
+:: Clean up old helper files if any remain.
+if exist "%~dp0UpdateHelper.bat" del /f /q "%~dp0UpdateHelper.bat" >nul 2>&1
+
 :: Local commit
 echo Local commit : %commit_id_local%
 
@@ -380,14 +383,18 @@ if /I "%commit_id_local%"=="%commit_id_remote%" (
 echo New commit detected. Downloading update...
 echo.
 
+:: Paths
 set "ScriptFolder=%~dp0"
 set "UpdateFile=%ScriptFolder%Browser_new.bat"
+set "UpdateHelper=%ScriptFolder%UpdateHelper.bat"
 
-:: Clean old temp file if any
-if exist "%UpdateFile%" del /f /q "%UpdateFile%"
+:: Clean old
+if exist "%UpdateFile%" del /f /q "%UpdateFile%" >nul 2>&1
+if exist "%UpdateHelper%" del /f /q "%UpdateHelper%" >nul 2>&1
 
-:: 1) Download and change name
+:: 1. Download new file
 powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%') } catch { exit 1 }"
+timeout /t 1 >nul
 if errorlevel 1 (
     echo ERROR: Download failed.
     timeout /t 3 >nul
@@ -399,28 +406,26 @@ if not exist "%UpdateFile%" (
     timeout /t 3 >nul
     goto :MainMenu
 )
+echo Download complete.
 
-:: 2) Replace commit_id_local inside Browser_new use ASCII to avoid BOM/encoding issues
-set "UpdateFileNoSlash=%UpdateFile:\=%"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $commit='%commit_id_remote%'; (Get-Content \"%UpdateFile%\") -replace 'set commit_id_local=.*',('set commit_id_local='+$commit) | Set-Content -Encoding ASCII \"%UpdateFile%\" } catch { exit 2 }"
-if errorlevel 2 (
-    echo ERROR: Cannot update commit_id_local in the new file.
-    del /f /q "%UpdateFile%" >nul 2>&1
-    timeout /t 3 >nul
-    goto :MainMenu
-)
+:: 2. Normalize line endings + ASCII
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$text = Get-Content -Raw -Encoding UTF8 '%UpdateFile%' -ErrorAction Stop; $text = $text -replace \"`r?`n\", \"`r`n\"; Set-Content -Path '%UpdateFile%' -Value $text -Encoding ASCII"
+echo Normalize complete.
 
-timeout /t 3 >nul
-:: 3) Replace current Browser by the new one
-move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
-if errorlevel 1 (
-    echo ERROR: Failed to replace Browser.bat.
-    del /f /q "%UpdateFile%" >nul 2>&1
-    timeout /t 3 >nul
-    goto :MainMenu
-)
+:: 3. Update commit_id_local
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$commit='%commit_id_remote%'; $content = Get-Content '%UpdateFile%'; $replacement = 'set commit_id_local=' + $commit; $updated = $content -replace 'set commit_id_local=.*', $replacement; Set-Content -Path '%UpdateFile%' -Value $updated -Encoding ASCII"
+echo Commit ID injected.
 
-echo Updated commit_id_local = %commit_id_remote%
-echo Restarting...
-start "" "%ScriptFolder%Browser.bat"
+:: 4. Generate UpdateHelper.bat
+echo @echo off > "%UpdateHelper%"
+echo timeout /t 2 ^>nul >> "%UpdateHelper%"
+echo move /Y "%%~dp0Browser_new.bat" "%%~dp0Browser.bat" ^>nul >> "%UpdateHelper%"
+echo cmd /c start "" "%%~dp0Browser.bat" >> "%UpdateHelper%"
+echo exit >> "%UpdateHelper%"
+
+echo UpdateHelper.bat created.
+
+:: 5. Call UpdateHelper to do replacement and restart
+echo Launching UpdateHelper...
+start "" "%UpdateHelper%"
 exit
