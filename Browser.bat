@@ -358,7 +358,7 @@ echo Local commit : %commit_id_local%
 
 :: Get remote commit ID from GitHub
 set "commit_id_remote="
-for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try {(Invoke-RestMethod -Uri 'https://api.github.com/repos/minhhungtsbd/browser-script/commits/main').sha} catch {''}"`) do (
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { (Invoke-RestMethod -Uri 'https://api.github.com/repos/minhhungtsbd/browser-script/commits/main').sha } catch { '' }"`) do (
     set "commit_id_remote=%%i"
 )
 
@@ -367,13 +367,13 @@ echo.
 
 if "%commit_id_remote%"=="" (
     echo ERROR: Unable to get commit ID from GitHub.
-    timeout /t 5 >nul
+    timeout /t 3 >nul
     goto :MainMenu
 )
 
-if "%commit_id_local%"=="%commit_id_remote%" (
+if /I "%commit_id_local%"=="%commit_id_remote%" (
     echo The script is already at the latest version.
-    timeout /t 3 >nul
+    timeout /t 2 >nul
     goto :MainMenu
 )
 
@@ -383,36 +383,44 @@ echo.
 set "ScriptFolder=%~dp0"
 set "UpdateFile=%ScriptFolder%Browser_new.bat"
 
-:: Download file
-powershell -NoProfile -ExecutionPolicy Bypass -Command "try {[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%')} catch {[Environment]::Exit(1)}"
+:: Clean old temp file if any
+if exist "%UpdateFile%" del /f /q "%UpdateFile%"
+
+:: 1) Download and change name
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { [Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%') } catch { exit 1 }"
 if errorlevel 1 (
     echo ERROR: Download failed.
-    timeout /t 5 >nul
-    goto :MainMenu
-)
-
-:: Check downloaded file
-if exist "%UpdateFile%" (
-    echo Download successful: %UpdateFile%
-    move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
-    echo Updated Browser.bat
-
-    :: Try update commit_id_local
-    powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $commit='%commit_id_remote%'; (Get-Content '%ScriptFolder%Browser.bat') -replace 'set commit_id_local=.*','set commit_id_local='+$commit | Set-Content -Encoding ASCII '%ScriptFolder%Browser.bat' } catch { exit 2 }"
-    if errorlevel 2 (
-        echo ERROR: Failed to update commit_id_local, rolling back...
-        del "%ScriptFolder%Browser.bat" >nul 2>&1
-        move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
-        timeout /t 5 >nul
-        goto :MainMenu
-    )
-
-    echo Updated commit_id_local = %commit_id_remote%
     timeout /t 3 >nul
-    start Browser.bat
-    exit
-) else (
-    echo ERROR: File not found after download.
-    timeout /t 10 >nul
     goto :MainMenu
 )
+
+if not exist "%UpdateFile%" (
+    echo ERROR: Update file missing after download.
+    timeout /t 3 >nul
+    goto :MainMenu
+)
+
+:: 2) Replace commit_id_local inside Browser_new use ASCII to avoid BOM/encoding issues
+set "UpdateFileNoSlash=%UpdateFile:\=%"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { $commit='%commit_id_remote%'; (Get-Content \"%UpdateFile%\") -replace 'set commit_id_local=.*',('set commit_id_local='+$commit) | Set-Content -Encoding ASCII \"%UpdateFile%\" } catch { exit 2 }"
+if errorlevel 2 (
+    echo ERROR: Cannot update commit_id_local in the new file.
+    del /f /q "%UpdateFile%" >nul 2>&1
+    timeout /t 3 >nul
+    goto :MainMenu
+)
+
+timeout /t 3 >nul
+:: 3) Replace current Browser by the new one
+move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
+if errorlevel 1 (
+    echo ERROR: Failed to replace Browser.bat.
+    del /f /q "%UpdateFile%" >nul 2>&1
+    timeout /t 3 >nul
+    goto :MainMenu
+)
+
+echo Updated commit_id_local = %commit_id_remote%
+echo Restarting...
+start "" "%ScriptFolder%Browser.bat"
+exit
