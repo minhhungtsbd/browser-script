@@ -357,7 +357,6 @@ echo.
 set "HelperFile=%~dp0UpdateHelper.bat"
 echo Checking: %HelperFile%
 if exist "%HelperFile%" (
-    echo Found UpdateHelper.bat
     del /f /q "%HelperFile%" >nul 2>&1
     if exist "%HelperFile%" (
         echo Delete FAILED.
