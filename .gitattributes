@@ -1,0 +1,31 @@
+# ============================
+# GITATTRIBUTES CONFIGURATION
+# ============================
+
+# Luôn dùng CRLF cho script Windows
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Luôn dùng LF cho script Linux
+*.sh  text eol=lf
+
+# File text chung (code, config, docs) để Git tự xử lý newline
+*.txt  text
+*.md   text
+*.yml  text
+*.yaml text
+*.json text
+*.xml  text
+
+# File nhị phân – không đổi line endings
+*.exe  binary
+*.dll  binary
+*.zip  binary
+*.7z   binary
+*.gz   binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.pdf  binary

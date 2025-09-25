@@ -12,7 +12,11 @@ title  Cloudmini tool
 
 set winbuild=1
 set psc=powershell.exe
+set commit_id_local=ce2dd155a414ae2ad136cb36dcef3bd4b252fb16
 for /f "tokens=4-5 delims=. " %%i in ('ver') do set winver=%%i.%%j
+
+:: --- Gọi check update trước khi vào menu ---
+goto :CheckUpdate
 
 ::========================================================================================================================================
 :MainMenu
@@ -345,3 +349,55 @@ if exist "%downloadpath%" (
 echo Returning to menu in 3 seconds...
 timeout /t 3 /nobreak >nul
 goto :MainMenu
+::========================================================================================================================================
+:CheckUpdate
+echo Checking for updates...
+echo.
+
+:: Local commit (khai báo ở đầu file)
+echo Local commit : %commit_id_local%
+
+:: Lấy commit ID remote từ GitHub
+set "commit_id_remote="
+for /f "usebackq delims=" %%i in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; (Invoke-RestMethod -Uri 'https://api.github.com/repos/minhhungtsbd/browser-script/commits/main').sha"`) do (
+    set "commit_id_remote=%%i"
+)
+
+echo Remote commit: %commit_id_remote%
+echo.
+
+if "%commit_id_remote%"=="" (
+    echo ERROR: Không lấy được commit ID từ GitHub.
+    timeout /t 5 >nul
+    goto :MainMenu
+)
+
+if "%commit_id_local%"=="%commit_id_remote%" (
+    echo Script đã ở phiên bản mới nhất.
+    timeout /t 3 >nul
+    goto :MainMenu
+)
+
+echo New commit detected. Downloading update...
+echo.
+
+:: Đặt đường dẫn tải về trong thư mục script hiện tại
+set "ScriptFolder=%~dp0"
+set "UpdateFile=%ScriptFolder%Browser_new.bat"
+
+:: Thực hiện tải file bằng PowerShell (1 dòng duy nhất)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; (New-Object Net.WebClient).DownloadFile('https://raw.githubusercontent.com/minhhungtsbd/browser-script/main/Browser.bat','%UpdateFile%')"
+
+:: Kiểm tra file tải về
+if exist "%UpdateFile%" (
+    echo Download thành công: %UpdateFile%
+    move /Y "%UpdateFile%" "%ScriptFolder%Browser.bat" >nul
+    echo Đã cập nhật file Browser.bat
+    timeout /t 3 >nul
+    exit
+) else (
+    echo ERROR: File không tồn tại sau khi download.
+    echo Hãy kiểm tra giá trị biến UpdateFile.
+    timeout /t 10 >nul
+    goto :MainMenu
+)
