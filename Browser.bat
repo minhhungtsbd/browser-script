@@ -427,8 +427,12 @@ echo Commit ID injected.
 
 :: 4. Generate UpdateHelper.bat
 echo @echo off > "%UpdateHelper%"
+echo setlocal EnableDelayedExpansion >> "%UpdateHelper%"
 echo timeout /t 2 ^>nul >> "%UpdateHelper%"
 echo move /Y "%%~dp0Browser_new.bat" "%%~dp0Browser.bat" ^>nul >> "%UpdateHelper%"
+echo if exist "%%~dp0Browser.bat" ( >> "%UpdateHelper%"
+echo     if exist "%%~dp0Browser-tool.bat" del /f /q "%%~dp0Browser-tool.bat" ^>nul 2^>^&1 >> "%UpdateHelper%"
+echo ) >> "%UpdateHelper%"
 echo cmd /c start "" "%%~dp0Browser.bat" >> "%UpdateHelper%"
 echo exit >> "%UpdateHelper%"
 
