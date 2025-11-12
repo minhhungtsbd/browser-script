@@ -12,7 +12,7 @@ title  Cloudmini tool
 
 set winbuild=1
 set psc=powershell.exe
-set commit_id_local=2ca6eddfc88f84e3b08e7f57630a06a7834b19bc
+set commit_id_local=c5da7d6fff4777442ab0ba4b8ed385291c060d9e
 for /f "tokens=4-5 delims=. " %%i in ('ver') do set winver=%%i.%%j
 
 :: --- Call to check for updates before entering the menu. ---
@@ -69,7 +69,6 @@ timeout 5
 net stop termservice /yes
 net start termservice
 echo ---------- Done, changed RDP port successfully...
-pause
 goto :MainMenu
 
 ::========================================================================================================================================
